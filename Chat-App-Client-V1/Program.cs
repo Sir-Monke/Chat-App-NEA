@@ -35,7 +35,24 @@ class ServerTCPApp {
         private static Int16 ConnectedClients = 0; // Connected Clients
         public static readonly Int16 MaxClients = 10; // Max Clients
 
-        private static void ToggleServer() { 
+        public void IncConnectedClients()
+        {
+            if (ConnectedClients < MaxClients)
+            {
+                ConnectedClients++;
+            }
+        }
+
+        public void DecConnectedClients()
+        {
+            if (ConnectedClients > 0)
+            {
+                ConnectedClients--;
+            }
+        }
+
+        private static void ToggleServer()
+        {
             ServerState = !ServerState;
             if (ServerState == true)
             {
