@@ -1,299 +1,358 @@
+// sorry laptop this program will prob cause a shit ton of network traffic / junk
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
-public static class ProtocolConsts // Header Stuff
+public static class ProtocolConsts
 {
-    public const byte TypePing = 0x01;
-    public const byte TypeData = 0x02;
-    public const byte TypeOther = 0x03;
+    public const byte TypePing = 0x1;
+    public const byte TypeData = 0x2;
+    public const byte TypeOther = 0x3;
 
     public const int HeaderSize = 5; // MessageType (1 byte) + PayloadLength (4 bytes)
 }
 
 class ClientTCPApp
 {
-    public class ClientData()
+    public class ClientData
     {
+        private TcpClient client;
+        private NetworkStream Nstream;
+        private string serverIP;
+        private int serverPort;
+        private bool CanSendMessage = true;
+        private const int MaxMessageLength = 100;
+        private const int DefaultMessageCoolDown = 5000;
+        private string LastMessage;
 
-        TcpClient client = null;
-        NetworkStream Nstream = null;
+        public bool Connected { get; private set; }
+        public bool Disconnected { get; private set; }
 
-        private string serverIP = null; // Replace with your server's IP address - dynamic IP as its machines local IP
-        private Int32 serverPort = 0; // Replace with your server's port number - port will always be 80 as its default
-
-        private bool CanSendMessage = true; // only for message cool down, false - is in cool down
-        private const Int16 MaxMessageLength = 256; // Maximum char length of message, might inc later depends on preformance
-        private const Int16 MaxDupeMessage = 2; // Maximum ammount of messages able to send before cooldown
-        private int DefaultMessageCoolDown = 5000;
-        private string LastMessage = null;
-
-        private bool ServerFound = false;
-        private bool Connected = false;
-        private bool Disconnected = false;
-
-        // Client Connection / Connection Info
-        public string GetServerIP() { return this.serverIP; }
-        public Int32 GetServerPort() { return this.serverPort; }
-        public bool GetConnected() {  return this.Connected; }
-        public bool GetDisconnected() {  return this.Disconnected; } // dont really need as connected is bool and there can only be connected or disconnected
-
-        public void Connect()
-        {
-            if (ServerFound == true)
-            {
-                try
-                {
-                    client = new TcpClient(this.GetServerIP(), this.GetServerPort());
-                    Nstream = client.GetStream();// Get a network stream for reading and writing
-                    this.Connected = true;
-                    Console.WriteLine("Connected to server.\n");
-                }
-                catch (IOException ex)
-                {
-                    Console.WriteLine("Connection error: Source:{0} About:{1}\n", ex.Source, ex.Message);
-                }
-                catch (ObjectDisposedException ex)
-                {
-                    Console.WriteLine("Connection error: Source:{0} About:{1}\n", ex.Source, ex.Message);
-                }
-            }
-            else
-            {
-                Console.WriteLine("Please config server before trying to connect.\n");
-            }
-        }
-
-        public void Disconnect() // not sure if this needs error checking
-        {
-            if (Connected == true)
-            {
-                client.Close();
-                Nstream.Close();
-                this.Disconnected = true;
-                Console.WriteLine("Disconnected.\n");
-            }
-        }
-
-        // Client Init
+        // Client Connection State / Init Conncection
         public void Init()
         {
-            while (!ServerFound)
+            while (!Connected)
             {
                 Console.WriteLine("Enter Server IP To Connect: ");
                 string tempIp = Console.ReadLine();
                 Console.WriteLine("Enter Server Port number To Connect: ");
-                Int32 tempPort = Convert.ToInt32(Console.ReadLine());
-
-                // Validate and clean server IP address input
-                if (ValidateInputText(ref tempIp) && ValidateIPAddr(tempIp) && ValidatePort(tempPort))
+                if (int.TryParse(Console.ReadLine(), out int tempPort))
                 {
-                    serverIP = tempIp; // Assign new server IP
-                    serverPort = tempPort;
-                    ServerFound = true;
+                    if (ValidateInputText(ref tempIp) && ValidateIPAddr(tempIp) && ValidatePort(tempPort))
+                    {
+                        serverIP = tempIp;
+                        serverPort = tempPort;
+                        Connect();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid IP address or port number. Please try again.");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Server IP is invalid or contains invalid characters.\nPress enter to retry.");
-                    Console.ReadLine();
-                    Console.Clear();
+                    Console.WriteLine("Port number must be a valid integer.");
                 }
             }
         }
-
-        //Check Server Status Client Side
-        private async Task SendPingAsync()
+        public void Connect()
         {
-            try
-            {
-                // Send a ping message
-                byte[] pingMessage = new byte[] { ProtocolConsts.TypePing };
-                await Nstream.WriteAsync(pingMessage, 0, pingMessage.Length);
-
-                // Wait for ping response (if any)
-                byte[] responseBuffer = new byte[1];
-                int bytesRead = await Nstream.ReadAsync(responseBuffer, 0, responseBuffer.Length);
-
-                // Handle ping response
-                byte responseType = responseBuffer[0];
-
-                if (responseType == ProtocolConsts.TypePing)
-                {
-                    Console.WriteLine("Ping response received.");
-                }
-                else
-                {
-                    Console.WriteLine("Unexpected response received.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error communicating with server: {ex.Message}.");
-            }
-        }
-
-        // Validation
-        private bool ValidateInputText(ref string UserText) // could use this for other things rather than just Ip input cba doing port if u cant enter a port num right ur just a mong
-        {
-            if (string.IsNullOrEmpty(UserText))
-            {
-                return false;
-            }
-
-            UserText = Regex.Replace(UserText, @"\s+", "");
-
-            return true;
-        }
-
-        private bool ValidateIPAddr(string tempIP)
-        {
-            if (string.IsNullOrWhiteSpace(tempIP))
-            {
-                return false;
-            }
-
-            string[] SplitIP = tempIP.Split('.');
-            if (SplitIP.Length != 4)
-            {
-                return false;
-            }
-
-            foreach (string Section in SplitIP)
-            {
-                if (!int.TryParse(Section, out int num) || num < 0 || num > 255)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private bool ValidatePort(Int32 tempPort)
-        {
-            if (tempPort >= 0 && tempPort <= 65535)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        // Client Message Stuff
-        private bool MessageCoolDown()
-        {
-            if (this.CanSendMessage == false)
-            {
-                Console.WriteLine("Cooldown already in progress. Please wait.\n");
-                return true;
-            }
-
-            this.CanSendMessage = false;
-            Console.WriteLine("Cooldown started. You need to wait before sending the next message.\n");
-
-            new Thread(() =>
-            {
-                int elapsed = 0;
-                while (elapsed < this.DefaultMessageCoolDown)
-                {
-                    Thread.Sleep(1000); // Sleep 1 second interval
-                    elapsed += 1000;
-                    Console.WriteLine($"Cooldown running... {elapsed / 1000} seconds elapsed.\n");
-                }
-                this.CanSendMessage = true;
-                Console.WriteLine("Cooldown ended. You can now send a message.\n");
-            }).Start();
-
-            return false;
-        }
-
-        private bool ValidateMessage(string Message)
-        {
-            Int16 MessageCount = 0;
-
-            if (CanSendMessage == true)
-            {
-                if (string.IsNullOrWhiteSpace(Message)) // message is empty or poop
-                {
-                    Console.WriteLine("Message invalid.\n");
-                    return false;
-                }
-
-                if (Message.Length > MaxMessageLength) // message bigger than 256 chars 
-                {
-                    Console.WriteLine("Your message is too long.\n");
-                    return false;
-                }
-
-                if (Message == this.LastMessage)
-                {
-                    MessageCoolDown();
-                }
-
-                MessageCount += 1;
-                this.LastMessage = Message;
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Cant send message are in cooldown.\n");
-                return false;
-            }
-
-        }
-
-        public void SendMessage(string Message)
-        {
-            if (this.Connected)
+            if (!Connected)
             {
                 try
                 {
-                    if (ValidateMessage(Message))
+                    client = new TcpClient(serverIP, serverPort);
+                    Nstream = client.GetStream();
+                    Connected = true;
+                    Console.WriteLine("Connected to server.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Connection error: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Already connected."); // shoudnt get here as no way to get back to connection text once connected
+            }
+        }
+        public void Disconnect()
+        {
+            if (Connected)
+            {
+                client.Close();
+                Nstream.Close();
+                Connected = false;
+                Disconnected = true;
+                Console.WriteLine("Disconnected.");
+            }
+        }
+
+        // Messaging Functions
+        private bool ValidateInputText(ref string userText)
+        {
+            if (string.IsNullOrEmpty(userText))
+            {
+                return false;
+            }
+
+            userText = Regex.Replace(userText, @"\s+", "");
+            return true;
+        }
+        private bool ValidateIPAddr(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip))
+            {
+                return false;
+            }
+
+            var parts = ip.Split('.');
+            if (parts.Length != 4)
+            {
+                return false;
+            }
+
+            foreach (var part in parts)
+            {
+                if (!int.TryParse(part, out int num) || num < 0 || num > 255)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        private bool ValidatePort(int port)
+        {
+            return port >= 0 && port <= 65535;
+        }
+        private bool ValidateMessage(string message)
+        {
+            if (!CanSendMessage)
+            {
+                Console.WriteLine("Cooldown in progress. Please wait.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                Console.WriteLine("Message is empty.");
+                return false;
+            }
+
+            if (message.Length > MaxMessageLength)
+            {
+                Console.WriteLine("Message is too long.");
+                return false;
+            }
+
+            if (message == LastMessage)
+            {
+                MessageCoolDown();
+            }
+
+            LastMessage = message;
+            return true;
+        }
+        private void MessageCoolDown()
+        {
+            CanSendMessage = false;
+            Console.WriteLine("Cooldown started. Please wait.");
+
+            Task.Delay(DefaultMessageCoolDown).ContinueWith(t =>
+            {
+                CanSendMessage = true;
+                Console.WriteLine("Cooldown ended. You can now send a message.");
+            });
+        }
+        public async Task SendMessage(string message) // might be hard with encryption as the packets are combined with header. im not sure tho as im stupid and dont know anything.
+        {
+            if (Connected)
+            {
+                try
+                {
+                    if (ValidateMessage(message))
                     {
-                        Byte[] MessageBytes = Encoding.ASCII.GetBytes(Message);
-                        this.Nstream.Write(MessageBytes, 0, MessageBytes.Length);
-                        Console.WriteLine("Message Sent.\n");
+                        byte[] payload = Encoding.ASCII.GetBytes(message);
+                        int payloadLength = payload.Length;
+
+                        // Create a combined array for header and payload
+                        byte[] messageData = new byte[ProtocolConsts.HeaderSize + payloadLength];
+
+                        // Create the header
+                        byte[] header = new byte[ProtocolConsts.HeaderSize];
+                        header[0] = ProtocolConsts.TypeData;
+                        BitConverter.GetBytes(payloadLength).CopyTo(header, 1);
+
+                        // Makea du herdar an du payroad one, togefur forevwer
+                        Array.Copy(header, 0, messageData, 0, ProtocolConsts.HeaderSize);
+                        Array.Copy(payload, 0, messageData, ProtocolConsts.HeaderSize, payloadLength);
+
+                        // Send the combined packet to seber
+                        await Nstream.WriteAsync(messageData, 0, messageData.Length);
+
+                        Console.WriteLine("Message sent.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Message validation failed.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Try again later.\n");
-                    Console.WriteLine("Message error: Source:{0} About:{1}\n", ex.Source, ex.Message);
+                    Console.WriteLine("Message error: {0}", ex.Message);
                 }
             }
             else
             {
-                Console.WriteLine("Client not connected to server.\n");
+                Console.WriteLine("Client is not connected to the server.");
             }
+        }
+
+        private async Task SendServerPing()
+        {
+            if (Connected)
+            {
+                try
+                {
+                    byte[] pingPacket = new byte[ProtocolConsts.HeaderSize];
+                    pingPacket[0] = ProtocolConsts.TypePing;
+                    BitConverter.GetBytes(0).CopyTo(pingPacket, 1);
+
+                    await Nstream.WriteAsync(pingPacket, 0, pingPacket.Length);
+                    Console.WriteLine("Ping packet sent.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending ping: {ex.Message}");
+                    Disconnected = true;
+                    Connected = false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not connected to the server.");
+            }
+        }
+        private async Task ReceiveServerPing()
+        {
+            if (Connected)
+            {
+                try
+                {
+                    byte[] buffer = new byte[ProtocolConsts.HeaderSize];
+
+                    int bytesRead = await Nstream.ReadAsync(buffer, 0, buffer.Length);
+
+                    if (bytesRead > 0)
+                    {
+                        if (buffer[0] == ProtocolConsts.TypePing && BitConverter.ToInt32(buffer, 1) == 0)
+                        {
+                            Console.WriteLine("Ping response received.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Unexpected response received.");
+                            Disconnected = true;
+                            Connected = false;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No response received from server.");
+                        Disconnected = true;
+                        Connected = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error receiving response: {ex.Message}");
+                    Disconnected = true;
+                    Connected = false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not connected to the server.");
+            }
+        }
+        public async Task ClientServerConnection()
+        {
+            if (Connected)
+            {
+                try
+                {
+                    await SendServerPing();
+                    await ReceiveServerPing();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error during server connection: {ex.Message}");
+                    Disconnected = true;
+                    Connected = false;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Not connected to the server.");
+            }
+        }
+
+    }
+
+    static async Task Main(string[] args)
+    {
+        ClientData clientData = new ClientData();
+        clientData.Init();
+
+        Task periodicTask = PeriodicClientServerConnection(clientData);
+
+        try
+        {
+            while (clientData.Connected)
+            {
+                string userInput = Console.ReadLine();
+                if (userInput == "/Exit")
+                {
+                    clientData.Disconnect();
+                    break;
+                }
+                else if (!string.IsNullOrEmpty(userInput))
+                {
+                    if (clientData.Connected)
+                    {
+                        await clientData.SendMessage(userInput);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            clientData.Disconnect();
+            await periodicTask;
+            Console.WriteLine("Lost connection, connected bool changed.");
         }
     }
 
-    static void Main(string[] args)
+    static async Task PeriodicClientServerConnection(ClientData clientData)
     {
-        ClientData clientData = new ClientData();
-        bool exit = false;
-
-        clientData.Init();
-        clientData.Connect();
-
-        while (!exit)
+        while (clientData.Connected)
         {
-            string userInput = Console.ReadLine();
+            try
+            {
+                await clientData.ClientServerConnection();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while connection check: {0}", ex.Message);
+            }
 
-            if (userInput == "/Exit")
-            {
-                exit = true;
-            }
-            else if (!string.IsNullOrEmpty(userInput))
-            {
-                clientData.SendMessage(userInput);
-            }
+            await Task.Delay(10000); // 10 sec int between each server ping
         }
-        clientData.Disconnect();
-        Thread.Sleep(3000);
     }
 }
