@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
-using System.IO;
+using System.Threading.Tasks;
 
-public static class ProtocolConsts // Header Stuff
+public static class ProtocolConsts
 {
     public const byte TypePing = 0x01;
     public const byte TypeData = 0x02;
@@ -17,54 +16,21 @@ public static class ProtocolConsts // Header Stuff
 
 class ServerTCPApp
 {
-    public static TcpListener Server = null;
-
-    class ChatRoom // for group chats cant use yet
-    {
-        public readonly Int16 MaxClients = 10;
-        private Int16 ClientCount = 0;
-
-        public Int16 GetClientCount()
-        {
-            return this.ClientCount;
-        }
-    }
+    public static TcpListener Server;
 
     class ServerTCPHandler
     {
+        private static readonly IPAddress LocalAddr = GetServerIPv4();
+        private static readonly int Port = 80;
+        private static bool ServerState = false;
 
-        private static IPAddress LocalAddr = GetServerIPv4(); // Will try to use machine IPv4 Addr if cant will use any Ip Addr
-        private static readonly Int32 Port = 80; // Port For Server
-        private static bool ServerState = false; // Server.Start(); to toggle listening state 
-
-        // Connected Clients Info Vars
-        private static Int16 ConnectedClients = 0; // Connected Clients
-        public static readonly Int16 MaxClients = 10; // Max Clients
-
-        // Connected Clients Info Methods
-        public void IncConnectedClients()
+        private static IPAddress GetServerIPv4()
         {
-            if (ConnectedClients < MaxClients)
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                ConnectedClients++;
-            }
-        }
-        public void DecConnectedClients()
-        {
-            if (ConnectedClients > 0)
-            {
-                ConnectedClients--;
-            }
-        }
-
-        // Assign Server IP for connection
-        private static IPAddress GetServerIPv4() // just gets local IPv4 ADDR if cant obtain will return random IP
-        {
-            foreach (NetworkInterface Ni in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                if (Ni.OperationalStatus == OperationalStatus.Up)
+                if (ni.OperationalStatus == OperationalStatus.Up)
                 {
-                    foreach (UnicastIPAddressInformation ip in Ni.GetIPProperties().UnicastAddresses)
+                    foreach (var ip in ni.GetIPProperties().UnicastAddresses)
                     {
                         if (ip.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip.Address))
                         {
@@ -73,72 +39,9 @@ class ServerTCPApp
                     }
                 }
             }
-            return IPAddress.Any; // might just return 0.0.0.0 idk why
+            return IPAddress.Any;
         }
 
-        //Handle Client Connection status / Messages 
-        public void HandleClientRequests()
-        {
-            while (ServerState)
-            {
-                try
-                {
-                    TcpClient client = Server.AcceptTcpClient();
-                    IncConnectedClients();
-                    HandleClient(client);
-                }
-                catch (SocketException e)
-                {
-                    Console.WriteLine($"SocketException: {e.Message}");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Exception: {e.Message}");
-                }
-            }
-        }
-        private void HandleClient(TcpClient client)
-        {
-            IPAddress clientIP = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
-            int clientPort = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
-            Console.WriteLine("Client Connected! Client Info: {0} {1}", clientIP, clientPort);
-
-            try
-            {
-                NetworkStream stream = client.GetStream();
-                //ProcessClientRequests(client, stream, clientIP, clientPort);
-                HandleClientAsync(client, stream, clientIP, clientPort);
-            }
-            catch (IOException)
-            {
-                Console.WriteLine("{0}:{1} disconnected unexpectedly.",clientIP,clientPort);
-            }
-            catch (ObjectDisposedException)
-            {
-                Console.WriteLine("{0}:{1} disconnected unexpectedly.", clientIP, clientPort);
-            }
-            finally
-            {
-                DecConnectedClients();
-                client.Close();
-            }
-        }
-        private void ProcessClientRequests(TcpClient client, NetworkStream stream, IPAddress clientIP, int clientPort)
-        {
-            Byte[] bytes = new Byte[256];
-            String data = null;
-
-            int i; // byte count index
-            while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-            {
-                data = Encoding.ASCII.GetString(bytes, 0, i);
-                Console.WriteLine("Message from {0}: {1}", clientIP, data);
-            }
-
-            Console.WriteLine("Client {0}:{1} disconnected.", clientIP, clientPort);
-        }
-
-        // TCP Server Configs
         public bool InitServer()
         {
             if (Server == null)
@@ -147,81 +50,122 @@ class ServerTCPApp
                 try
                 {
                     ToggleServer();
-                    HandleClientRequests();
+                    Task.Run(() => HandleClientRequests()); // Run client handling in a separate task
                     return true;
-                }
-                catch (SocketException e)
-                {
-                    Console.WriteLine("SocketException: {0}",e);
-                    return false;
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Exception: {0}",e);
+                    Console.WriteLine("Initialization error: {0}", e.Message);
                     return false;
                 }
             }
             return false;
         }
-        private static void ToggleServer() // just toggles the state of the server - havent tested the turn of server thing but.....
+
+        private static void ToggleServer()
         {
             ServerState = !ServerState;
-            if (ServerState == true)
+            if (ServerState)
             {
                 Server.Start();
                 Console.WriteLine("Server started, TCP listening on {0}:{1}", LocalAddr, Port);
             }
-            else if (ServerState == false)
+            else
             {
                 Server.Stop();
-                Console.WriteLine("Server stopped on: {0}:{1}", LocalAddr, Port);
+                Console.WriteLine("Server stopped on {0}:{1}", LocalAddr, Port);
             }
-            return;
         }
 
-        private async Task HandleClientAsync(TcpClient client, NetworkStream stream, IPAddress clientIP, int clientPort)
+        private async Task HandleClientRequests()
         {
+            while (ServerState)
+            {
+                try
+                {
+                    var client = await Server.AcceptTcpClientAsync();
+                    Console.WriteLine("Client connected.");
+                    _ = Task.Run(() => HandleClientAsync(client));
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Accept error: {0}", e.Message);
+                }
+            }
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
+        {
+            IPAddress clientIP = ((IPEndPoint)client.Client.RemoteEndPoint).Address;
+            int clientPort = ((IPEndPoint)client.Client.RemoteEndPoint).Port;
+            Console.WriteLine($"Handling client {clientIP}:{clientPort}");
+
             try
             {
-                byte[] headerBuffer = new byte[ProtocolConsts.HeaderSize];
-                int bytesRead = await stream.ReadAsync(headerBuffer, 0, headerBuffer.Length);
-
-                if (bytesRead > 0)
+                using (var stream = client.GetStream())
                 {
-                    byte messageType = headerBuffer[0];
-                    int payloadLength = BitConverter.ToInt32(headerBuffer, 1);
-
-                    byte[] payload = new byte[payloadLength];
-                    bytesRead = await stream.ReadAsync(payload, 0, payload.Length);
-
-                    if (bytesRead > 0)
+                    while (client.Connected)
                     {
+                        // Read header
+                        byte[] headerBuffer = new byte[ProtocolConsts.HeaderSize];
+                        int headerBytesRead = 0;
+                        while (headerBytesRead < headerBuffer.Length)
+                        {
+                            int bytesRead = await stream.ReadAsync(headerBuffer, headerBytesRead, headerBuffer.Length - headerBytesRead);
+                            if (bytesRead == 0) break; // End of stream
+                            headerBytesRead += bytesRead;
+                        }
+
+                        if (headerBytesRead < ProtocolConsts.HeaderSize)
+                        {
+                            Console.WriteLine("Error: Incomplete header read.\n Client lost: {0}:{1}", clientIP, clientPort);
+                            break;
+                        }
+
+                        byte messageType = headerBuffer[0];
+                        int payloadLength = BitConverter.ToInt32(headerBuffer, 1);
+
+                        // Read payload if needed
+                        byte[] payload = new byte[payloadLength];
+                        int payloadBytesRead = 0;
+                        if (payloadLength > 0)
+                        {
+                            while (payloadBytesRead < payload.Length)
+                            {
+                                int bytesRead = await stream.ReadAsync(payload, payloadBytesRead, payload.Length - payloadBytesRead);
+                                if (bytesRead == 0) break; // End of stream
+                                payloadBytesRead += bytesRead;
+                            }
+
+                            if (payloadBytesRead < payloadLength)
+                            {
+                                Console.WriteLine("Error: Incomplete payload read.");
+                                break;
+                            }
+                        }
+
+                        // Process message
                         switch (messageType)
                         {
                             case ProtocolConsts.TypePing:
                                 Console.WriteLine("Received Ping from client");
 
-                                // Send a response (acknowledgment)
-                                byte[] responseBuffer = new byte[] { ProtocolConsts.TypePing }; // Ping response
+                                byte[] responseBuffer = new byte[ProtocolConsts.HeaderSize];
+                                responseBuffer[0] = ProtocolConsts.TypePing;
+                                BitConverter.GetBytes(0).CopyTo(responseBuffer, 1);
+
                                 await stream.WriteAsync(responseBuffer, 0, responseBuffer.Length);
+                                Console.WriteLine("Ping response sent.");
                                 break;
                             case ProtocolConsts.TypeData:
-                                Byte[] bytes = new Byte[256];
-                                String data = null;
-
-                                int i; // byte count index
-                                while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-                                {
-                                    data = Encoding.ASCII.GetString(bytes, 0, i);
-                                    Console.WriteLine("Message from {0}: {1}", clientIP, data);
-                                }
-                                Console.WriteLine("Client {0}:{1} disconnected.", clientIP, clientPort);
+                                string data = Encoding.ASCII.GetString(payload);
+                                Console.WriteLine($"Message from {clientIP}:{clientPort}: {data}");
                                 break;
                             case ProtocolConsts.TypeOther:
-                                // not sure what other stuff this could handle with but its here soooooo :)
+                                // Handle other message types if needed
                                 break;
                             default:
-                                Console.WriteLine("Unknown message type: {0}", messageType);
+                                Console.WriteLine($"Unknown message type: {messageType}");
                                 break;
                         }
                     }
@@ -231,19 +175,20 @@ class ServerTCPApp
             {
                 Console.WriteLine($"Error handling client: {ex.Message}");
             }
-
+            finally
+            {
+                client.Close();
+                Console.WriteLine($"Client {clientIP}:{clientPort} disconnected.");
+            }
         }
     }
 
     private static void Main(string[] args)
     {
-        ServerTCPHandler ServerHdl = new ServerTCPHandler();
+        var serverHandler = new ServerTCPHandler();
+        serverHandler.InitServer();
 
-        ServerHdl.InitServer();
-
-        while (true) // shitty temp loop just to keep running
-        {
-
-        }
+        Console.WriteLine("Press Enter to exit...");
+        Console.ReadLine();
     }
 }
