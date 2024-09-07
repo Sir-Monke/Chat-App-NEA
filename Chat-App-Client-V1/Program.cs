@@ -1,6 +1,8 @@
 // sorry laptop this program will prob cause a shit ton of network traffic / junk
 // might add cool interactive console to this but no need as will use winforms soon to finish up
 
+// NO WORK WITH SOME VPN CONFIGS
+
 /*⠀⠀
   ⠀⠀⢀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⠾⠛⠶⣄⢀⣠⣤⠴⢦⡀⠀⠀⠀⠀
 ⠀⠀⠀⢠⡿⠉⠉⠉⠛⠶⠶⠖⠒⠒⣾⠋⠀⢀⣀⣙⣯⡁⠀⠀⠀⣿⠀⠀⠀⠀
@@ -15,20 +17,20 @@
 ⠀⠀⠀⠀⠀⠀⠀⠈⠉⠛⠛⠶⠶⠶⣶⣤⣴⡶⠶⠶⠟⠛⠉⠀⠀⠀⠀⠀⠀⠀
 */
 
-using System;
-using System.IO;
+using System.Globalization;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 public static class ProtocolConsts
 {
-    public const byte TypePing = 0x1;
-    public const byte TypeData = 0x2;
-    public const byte TypeOther = 0x3;
+    public const byte TypePing = 0x01;
+    public const byte TypeData = 0x02;
+    public const byte TypePrivateGroup = 0x03;
+    public const byte TypePrivateManage = 0x04; // for group creation and deletion and porb name changes idk
+    public const byte TypeOther = 0x05; // mainly for client id sending
 
     public const int HeaderSize = 5; // MessageType (1 byte) + PayloadLength (4 bytes)
 }
@@ -37,10 +39,23 @@ class ClientTCPApp
 {
     public class ClientData
     {
+        private static readonly char[] GroupIdChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#%&*".ToCharArray();
+
         private TcpClient client;
         private NetworkStream Nstream;
-        private string serverIP;
-        private int serverPort;
+
+        // Client Info
+        public string ClientIp { get; private set; }
+        public int ClientPort { get; private set; }
+        public string ClientId { get; private set; }
+        public string DominantGroupId;
+        public Queue<string> ClientGroupIds = new Queue<string>();
+
+        // Server Info
+        private string serverIP { get; set; }
+        private int serverPort { get; set; }
+
+        // Client msg info / params
         private bool CanSendMessage = true;
         private readonly int MaxMessageLength = 100;
         private readonly int DefaultMessageCoolDown = 5000;
@@ -48,37 +63,48 @@ class ClientTCPApp
         private string LastMessage;
         private int tempMsgCounter = 0;
 
+        // Client Connection State
         public bool Connected { get; private set; }
         public bool Disconnected { get; private set; }
 
-        // Client Connection State / Init Conncection
-        public void Init()
+        // Client connection / connection setup / connection break down / other connection state function toggles
+        public async Task Init()
         {
             while (!Connected)
             {
-                Console.WriteLine("Enter Server IP To Connect: ");
-                string tempIp = Console.ReadLine();
-                Console.WriteLine("Enter Server Port number To Connect: ");
-                if (int.TryParse(Console.ReadLine(), out int tempPort))
+                Console.WriteLine("Enter Server IP and Port number to Connect (IP:PORT): ");
+                string input = Console.ReadLine();
+
+                string[] parts = input.Split(':');
+
+                if (parts.Length == 2)
                 {
-                    if (ValidateInputText(ref tempIp) && ValidateIPAddr(tempIp) && ValidatePort(tempPort))
+                    string tempIp = parts[0].Trim();
+                    if (int.TryParse(parts[1].Trim(), out int tempPort))
                     {
-                        serverIP = tempIp;
-                        serverPort = tempPort;
-                        Connect();
+                        if (ValidateInputText(ref tempIp) && ValidateIPAddr(tempIp) && ValidatePort(tempPort))
+                        {
+                            serverIP = tempIp;
+                            serverPort = tempPort;
+                            await Connect();
+                        }
+                        else
+                        {
+                            Console.WriteLine("\u001b[33mInvalid IP address or port number. Please try again.\u001b[0m");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("\u001b[33mInvalid IP address or port number. Please try again.\u001b[0m");
+                        Console.WriteLine("\u001b[33mPort number must be a valid integer.\u001b[0m");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("\u001b[33mPort number must be a valid integer.\u001b[0m");
+                    Console.WriteLine("\u001b[33mInput must be in the format <IP>:<Port>. Please try again.\u001b[0m");
                 }
             }
         }
-        public void Connect()
+        public async Task Connect()
         {
             if (!Connected)
             {
@@ -86,12 +112,17 @@ class ClientTCPApp
                 {
                     client = new TcpClient(serverIP, serverPort);
                     Nstream = client.GetStream();
+                    GetClientIpAddress(); GetClientPort();
+                    ReceiveIdAsync().Wait();
                     Connected = true;
+                    Disconnected = false;
                     Console.WriteLine("\u001b[32mConnected to server.\u001b[0m");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("\u001b[31mConnection error: server actively refused connection or not valid server ip/port.\u001b[0m");
+                    Console.WriteLine($"\u001b[31mConnection error: {ex.Message}\u001b[0m");
+                    Connected = false;
+                    Disconnected = true;
                 }
             }
             else
@@ -103,15 +134,117 @@ class ClientTCPApp
         {
             if (Connected)
             {
-                client.Close();
-                Nstream.Close();
-                Connected = false;
-                Disconnected = true;
-                Console.WriteLine("\u001b[33mDisconnected.\u001b[0m");
+                try
+                {
+                    client.Close();
+                    Nstream.Close();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"\u001b[31mError closing connection: {ex.Message}\u001b[0m");
+                }
+                finally
+                {
+                    Connected = false;
+                    Disconnected = true;
+                    Console.WriteLine("\u001b[33mDisconnected.\u001b[0m");
+                }
+            }
+        }
+        private async Task ReceiveIdAsync()
+        {
+            try
+            {
+                // Read the header
+                byte[] headerBuffer = new byte[ProtocolConsts.HeaderSize];
+                int headerBytesRead = await Nstream.ReadAsync(headerBuffer, 0, ProtocolConsts.HeaderSize);
+                if (headerBytesRead < ProtocolConsts.HeaderSize)
+                {
+                    throw new Exception("Invalid client info message: Incomplete header.");
+                }
+
+                byte messageType = headerBuffer[0];
+                int payloadLength = BitConverter.ToInt32(headerBuffer, 1);
+
+                if (messageType == ProtocolConsts.TypeOther)
+                {
+                    // Read the payload
+                    byte[] payloadBuffer = new byte[payloadLength];
+                    int payloadBytesRead = await Nstream.ReadAsync(payloadBuffer, 0, payloadLength);
+                    if (payloadBytesRead < payloadLength)
+                    {
+                        throw new Exception("Invalid client info message: Incomplete payload.");
+                    }
+
+                    int offset = 0;
+
+                    // Read ClientId, assuming the format is XXX-XXX with a fixed length of 7
+                    int idLength = 7;
+                    if (payloadLength < idLength)
+                    {
+                        throw new Exception("Invalid payload length for ClientId.");
+                    }
+                    ClientId = Encoding.ASCII.GetString(payloadBuffer, offset, idLength);
+                    offset += idLength;
+
+                    // Validate the ClientId
+                    if (!ValidateClientId(ClientId))
+                    {
+                        throw new Exception($"Invalid ClientId received: {ClientId}");
+                    }
+
+                    // Validate IP address length
+                    int ipLength = payloadLength - idLength - 4; // 4 bytes reserved for port
+                    if (ipLength <= 0 || offset + ipLength > payloadLength)
+                    {
+                        throw new Exception("Invalid IP address length.");
+                    }
+                    string receivedIp = Encoding.ASCII.GetString(payloadBuffer, offset, ipLength);
+                    if (!ValidateIPAddr(receivedIp))
+                    {
+                        throw new Exception($"Invalid IP address received: {receivedIp}");
+                    }
+                    offset += ipLength;
+
+                    if (receivedIp != ClientIp)
+                    {
+                        Console.WriteLine($"Received IP doesn't match the client's IP. Client IP: {ClientIp}, Received IP: {receivedIp}");
+                        return;
+                    }
+
+                    // Validate port number
+                    if (offset + 4 > payloadLength)
+                    {
+                        throw new Exception("Invalid payload length for port number.");
+                    }
+                    int receivedPort = BitConverter.ToInt32(payloadBuffer, offset);
+                    if (!ValidatePort(receivedPort))
+                    {
+                        throw new Exception($"Invalid port number received: {receivedPort}");
+                    }
+
+                    if (receivedPort != ClientPort)
+                    {
+                        Console.WriteLine("Received port doesn't match the client's port.");
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error receiving client info: {ex.Message}");
             }
         }
 
-        // Messaging Functions
+        private void GetClientIpAddress() // MIGHT BE A FUCKIN RETARD BUT CANT GET THE CLIENTS IPV4 ADDR FOR THE LIFE OF ME 
+        {
+        }
+        private void GetClientPort()
+        {
+            ClientPort = client?.Client?.LocalEndPoint is IPEndPoint endPoint ? endPoint.Port : -1;
+        }//RANDOM CODE FOUND ON STACKOVERFLOW
+
+        // Messaging Validate Functions
         private bool ValidateInputText(ref string userText)
         {
             if (string.IsNullOrEmpty(userText))
@@ -171,7 +304,7 @@ class ClientTCPApp
             if (message == LastMessage)
             {
                 tempMsgCounter++;
-                if (tempMsgCounter == MaxSameMessageCount) 
+                if (tempMsgCounter == MaxSameMessageCount)
                 {
                     MessageCoolDown();
                 }
@@ -192,7 +325,57 @@ class ClientTCPApp
                 Console.WriteLine("\u001b[33mCooldown ended.\u001b[0m");
             });
         }
-        public async Task SendMessage(string message) // might be hard with encryption as the packets are combined with header. im not sure tho as im stupid and dont know anything.
+
+        //Other Validate Functions
+        private bool ValidateGroupId()
+        {
+            if (ClientGroupIds.Count > 0)
+            {
+                foreach (string groupId in ClientGroupIds)
+                {
+                    if (groupId.Length == 17 && groupId[5] == '-' && groupId[11] == '-')
+                    {
+                        string tempGroupId = groupId.Replace("-", ""); // can use string.Empty instead of "" but poop balls cheese 
+                        if (tempGroupId.Length == 15)
+                        {
+                            bool isValid = true;
+                            foreach (char c in tempGroupId)
+                            {
+                                if (Array.IndexOf(GroupIdChars, c) == -1)
+                                {
+                                    isValid = false;
+                                    break;
+                                }
+                            }
+
+                            if (isValid)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+        private bool ValidateClientId(string clientId)
+        {
+            char[] validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-".ToCharArray();
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                return false;
+            }
+
+            if (clientId.Length != 7)
+            {
+                return false;
+            }
+
+            return clientId.All(c => validChars.Contains(c));
+        }
+
+        // Messaging Functions
+        public async Task SendMessage(string groupId, string message) // might be hard with encryption as the packets are combined with header. im not sure tho as im stupid and dont know anything.
         {
             if (Connected)
             {
@@ -202,7 +385,7 @@ class ClientTCPApp
                     {
                         if (CanSendMessage)
                         {
-                            byte[] payload = Encoding.ASCII.GetBytes(message);
+                            byte[] payload = Encoding.ASCII.GetBytes(ClientId + "-" + groupId + "-" + message); // make sure when sending message the group id is outlined and the sender is too
                             int payloadLength = payload.Length;
 
                             // Create a combined array for header and payload
@@ -210,7 +393,7 @@ class ClientTCPApp
 
                             // Create the header
                             byte[] header = new byte[ProtocolConsts.HeaderSize];
-                            header[0] = ProtocolConsts.TypeData;
+                            header[0] = ProtocolConsts.TypePrivateGroup; // all messages between clients will be considerd as groups coz its just easier as the way its been set up with the ids
                             BitConverter.GetBytes(payloadLength).CopyTo(header, 1);
 
                             // Makea du herdar an du payroad one, togefur forevwer
@@ -234,6 +417,13 @@ class ClientTCPApp
                 Console.WriteLine("\u001b[31mClient is not connected to the server.\u001b[0m");
             }
         }
+        public async Task RecieveMessage() // only when a client is in a group will be better doing this server side
+        {
+            if (Connected)
+            {
+
+            }
+        }
 
         // Server Connection State not sure if i need this many funcitons for this but oh well
         private async Task SendServerPing()
@@ -252,6 +442,7 @@ class ClientTCPApp
                 {
                     Disconnected = true;
                     Connected = false;
+                    Console.WriteLine($"\u001b[31mPing error: {ex.Message}\u001b[0m");
                 }
             }
             else
@@ -266,12 +457,11 @@ class ClientTCPApp
                 try
                 {
                     byte[] buffer = new byte[ProtocolConsts.HeaderSize];
-
                     int bytesRead = await Nstream.ReadAsync(buffer, 0, buffer.Length);
 
                     if (bytesRead > 0)
                     {
-                        if (buffer[0] != ProtocolConsts.TypePing && BitConverter.ToInt32(buffer, 1) != 0)
+                        if (buffer[0] != ProtocolConsts.TypePing || BitConverter.ToInt32(buffer, 1) != 0)
                         {
                             Console.WriteLine("\u001b[31mUnexpected response received.\u001b[0m");
                             Disconnected = true;
@@ -287,7 +477,7 @@ class ClientTCPApp
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("\u001b[31mError receiving response: {0}\u001b[0m", ex.Message);
+                    Console.WriteLine($"\u001b[31mError receiving response: {ex.Message}\u001b[0m");
                     Disconnected = true;
                     Connected = false;
                 }
@@ -308,7 +498,7 @@ class ClientTCPApp
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("\u001b[31mError during server connection: {0}\u001b[0m", ex.Message);
+                    Console.WriteLine($"\u001b[31mError during server connection: {ex.Message}\u001b[0m");
                     Disconnected = true;
                     Connected = false;
                 }
@@ -320,55 +510,253 @@ class ClientTCPApp
                 Init();
             }
         }
-        public async Task ServerConCheck(ClientData clientData)
+        public async Task ServerConCheck()
         {
-            while (clientData.Connected)
+            while (Connected)
             {
                 try
                 {
-                    await clientData.ClientServerConnection();
+                    await ClientServerConnection();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("\u001b[31mError while connection check: {0}\u001b[0m", ex.Message);
+                    Console.WriteLine($"\u001b[31mError while connection check: {ex.Message}\u001b[0m");
                 }
 
-                await Task.Delay(5000); // 5 sec int between each server ping - need to find best time for this
+                await Task.Delay(5000); // 5 sec interval between each server ping
+            }
+        }
+
+        private static readonly object lockObj = new object();
+        private static Random random = new Random();
+        public string GenGroupId()
+        {
+            char[] id = new char[15];
+            lock (lockObj)
+            {
+                for (int i = 0; i < id.Length; i++)
+                {
+                    id[i] = GroupIdChars[random.Next(GroupIdChars.Length)];
+                }
+            }
+
+            // Convert char array to string and insert dashes
+            string idString = new string(id);
+            for (int i = 5; i < idString.Length; i += 6)
+            {
+                idString = idString.Insert(i, "-");
+            }
+
+            return idString; // Should be something like XXXXX-XXXXX-XXXXX
+        }
+    }
+
+    class ClientUI : ClientData
+    {
+        private readonly ClientData clientData;
+
+        public ClientUI()
+        {
+            clientData = this; // Assuming this is the intended instance
+        }
+
+        ConsoleKeyInfo key;
+        int index = 1;
+        bool isSelected = false;
+        string GreenColour = "\u001b[94m";
+        bool bExit = false;
+        bool[] toggledOptions = new bool[6];
+
+        private void Header()
+        {
+            Console.WriteLine("Bean Client Console UI - Made By Le Monke");
+            Console.WriteLine("Use Arrow Keys to navigate UI and use Enter/Return to select.\n");
+        }
+
+        public void Main()
+        {
+            while (!bExit)
+            {
+                Console.Clear();
+
+                (int Left, int Top) = Console.GetCursorPosition();
+                Console.SetCursorPosition(Left, Top);
+
+                Header();
+
+                Console.WriteLine($"{(index == 1 ? GreenColour : "")}Connect To Server{(Connected ? " \u001b[92mX Connected To Server" : " \u001b[31mX Not Connected To Server")}\u001b[0m");
+                Console.WriteLine($"{(index == 2 ? GreenColour : "")}Get Client/Group Info{(toggledOptions[1] ? " \u001b[92mX" : "")}\u001b[0m");
+                Console.WriteLine($"{(index == 3 ? GreenColour : "")}Start Group{(toggledOptions[2] ? " \u001b[92mX" : "")}\u001b[0m");
+                Console.WriteLine($"{(index == 4 ? GreenColour : "")}Send Message{(toggledOptions[3] ? " \u001b[92mX" : "")}\u001b[0m");
+                Console.WriteLine($"{(index == 5 ? GreenColour : "")}Leave Group{(toggledOptions[4] ? " \u001b[92mX" : "")}\u001b[0m");
+                Console.WriteLine($"{(index == 6 ? GreenColour : "")}Exit{(toggledOptions[5] ? " \u001b[92mX" : "")}\u001b[0m");
+
+                key = Console.ReadKey(true);
+
+                switch (key.Key)
+                {
+                    case ConsoleKey.DownArrow:
+                        index = (index == 6) ? 1 : index + 1;
+                        break;
+                    case ConsoleKey.UpArrow:
+                        index = (index == 1) ? 6 : index - 1;
+                        break;
+                    case ConsoleKey.Enter:
+                        isSelected = true;
+                        HandleSelection();
+                        isSelected = false;
+                        break;
+                }
+            }
+        }
+
+        private void SelectGroup()
+        {
+            Console.Clear();
+            Header();
+            if (Connected)
+            {
+                if (ClientGroupIds.Count != 0)
+                {
+                    while (string.IsNullOrEmpty(DominantGroupId))
+                    {
+                        DominantGroupId = "";
+                        Console.WriteLine("Connected Groups: {0}", ClientGroupIds.Count);
+                        foreach (var group in ClientGroupIds)
+                        {
+                            Console.WriteLine("Group Id: {0}", group);
+                        }
+                        string inGroupId = Console.ReadLine();
+                        if (!string.IsNullOrWhiteSpace(inGroupId) && ClientGroupIds.Contains(inGroupId))
+                        {
+                            DominantGroupId = inGroupId;
+                            Console.WriteLine("Selected Group: {0}", DominantGroupId);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid Group Id. Try Again");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Join a group or create one to send messages.");
+                }
+            }
+            Console.ReadKey(true);
+        }
+
+        private void LocalClientGroupInfo()
+        {
+            Console.Clear();
+            Header();
+            Console.WriteLine("Client IP: {0}", clientData.ClientIp);
+            Console.WriteLine("Client Port: {0}", clientData.ClientPort);
+            Console.WriteLine("Client ID: {0}", clientData.ClientId);
+            Console.WriteLine("Dominant Group ID: {0}", DominantGroupId ?? "None");
+
+            if (ClientGroupIds.Count > 0)
+            {
+                Console.WriteLine("Groups:");
+                foreach (string groupId in ClientGroupIds)
+                {
+                    Console.WriteLine("- {0}", groupId);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Client in no groups.");
+            }
+            Console.ReadKey(true);
+        }
+
+        private void StartGroup()
+        {
+            if (Connected)
+            {
+                string newGroupId = GenGroupId();
+                ClientGroupIds.Enqueue(newGroupId);
+                DominantGroupId = newGroupId;
+                Console.WriteLine("Group {0} started and set as the dominant group.", newGroupId);
+            }
+            else
+            {
+                Console.WriteLine("You need to be connected to the server to start a group.");
+            }
+            Console.ReadKey(true);
+        }
+
+        private void SendMessage()
+        {
+            Console.Clear();
+            Header();
+            if (Connected)
+            {
+                if (string.IsNullOrEmpty(DominantGroupId))
+                {
+                    Console.WriteLine("You need to select a group first.");
+                }
+                else
+                {
+                    Console.WriteLine("Enter your message:");
+                    string message = Console.ReadLine();
+                    if (message.Length > 0)
+                    {
+                        SendMessage(DominantGroupId, message).Wait();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Message cannot be empty.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("You need to be connected to the server to send a message.");
+            }
+            Console.ReadKey(true);
+        }
+
+        private void LeaveGroup()
+        {
+            Console.Clear();
+            Header();
+            Console.ReadKey(true);
+        }
+
+        private async void HandleSelection()
+        {
+            switch (index)
+            {
+                case 1:
+                    await Init();
+                    break;
+                case 2:
+                    LocalClientGroupInfo();
+                    break;
+                case 3:
+                    StartGroup();
+                    break;
+                case 4:
+                    SendMessage();
+                    break;
+                case 5:
+                    LeaveGroup();
+                    break;
+                case 6:
+                    bExit = true;
+                    break;
             }
         }
     }
 
-    static async Task Main(string[] args)
+
+    static Task Main(string[] args)
     {
-        ClientData clientData = new ClientData();
-        clientData.Init();
+        ClientUI clientUI = new ClientUI();
+        clientUI.Main();
 
-        Task periodicTask = clientData.ServerConCheck(clientData);
-
-        try
-        {
-            while (clientData.Connected)
-            {
-                string userInput = Console.ReadLine();
-                if (userInput == "/Exit")
-                {
-                    clientData.Disconnect();
-                    break;
-                }
-                else if (!string.IsNullOrEmpty(userInput))
-                {
-                    if (clientData.Connected)
-                    {
-                        await clientData.SendMessage(userInput);
-                    }
-                }
-            }
-        }
-        finally
-        {
-            clientData.Disconnect();
-            await periodicTask;
-            Console.WriteLine("\u001b[31mLost connection, connected bool changed.\u001b[0m");
-        }
+        clientUI.Disconnect();
+        return Task.CompletedTask;
     }
 }
