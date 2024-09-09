@@ -1,11 +1,11 @@
 // sorry laptop this program will prob cause a shit ton of network traffic / junk
 // might add cool interactive console to this but no need as will use winforms soon to finish up
 
-// NO WORK WITH SOME VPN CONFIGS
+// NO WORK WITH VPN
 
 /*⠀⠀
   ⠀⠀⢀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⠾⠛⠶⣄⢀⣠⣤⠴⢦⡀⠀⠀⠀⠀
-⠀⠀⠀⢠⡿⠉⠉⠉⠛⠶⠶⠖⠒⠒⣾⠋⠀⢀⣀⣙⣯⡁⠀⠀⠀⣿⠀⠀⠀⠀
+⠀⠀⠀⢠⡿⠉⠉⠉⠛⠶⠶⠖⠒⠒⣾⠋⠀⢀⣀⣙⣯⡁⠀⠀⠀⣿⠀⠀⠀`⠀
 ⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⢸⡏⠀⠀⢯⣼⠋⠉⠙⢶⠞⠛⠻⣆⠀⠀⠀
 ⠀⠀⠀⢸⣧⠆⠀⠀⠀⠀⠀⠀⠀⠀⠻⣦⣤⡤⢿⡀⠀⢀⣼⣷⠀⠀⣽⠀⠀⠀
 ⠀⠀⠀⣼⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⢏⡉⠁⣠⡾⣇⠀⠀⠀
@@ -15,9 +15,17 @@
 ⠀⠀⠋⠙⣧⣀⡀⠀⠀⠀⠀⠀⠀⠘⠦⠼⠃⠀⠀⠀⠀⠀⠀⠀⢤⣼⣏⠀⠀⠀
 ⠀⠀⢀⠴⠚⠻⢧⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⠞⠉⠉⠓⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠈⠉⠛⠛⠶⠶⠶⣶⣤⣴⡶⠶⠶⠟⠛⠉⠀⠀⠀⠀⠀⠀⠀
+
+C R E A T E
+D E L E T E  < -  6 BYTES LONG
+L E A V E -  < -  5 BYTES LONG
+J O I N - -
+K I C K - -
+N A M E - -  < -  4 BYTES LONG
 */
 
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -28,8 +36,8 @@ public static class ProtocolConsts
 {
     public const byte TypePing = 0x01;
     public const byte TypeData = 0x02;
-    public const byte TypePrivateGroup = 0x03;
-    public const byte TypePrivateManage = 0x04; // for group creation and deletion and porb name changes idk
+    public const byte TypePrivateGroup = 0x03; 
+    public const byte TypePrivateManage = 0x04; // HEADERS "CREATE" / "KICK" / "LEAVE" / "NAME" / "DELETE" / "STINKY"
     public const byte TypeOther = 0x05; // mainly for client id sending
 
     public const int HeaderSize = 5; // MessageType (1 byte) + PayloadLength (4 bytes)
@@ -37,9 +45,10 @@ public static class ProtocolConsts
 
 class ClientTCPApp
 {
-    public class ClientData
+    public class Client
     {
         private static readonly char[] GroupIdChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#%&*".ToCharArray();
+        private static List<string> validGroupManageTypes = new List<string> { "CREATE", "DELETE", "LEAVE-", "JOIN--", "KICK--", "NAME--" };
 
         private TcpClient client;
         private NetworkStream Nstream;
@@ -47,7 +56,7 @@ class ClientTCPApp
         // Client Info
         public string ClientIp { get; private set; }
         public int ClientPort { get; private set; }
-        public string ClientId { get; private set; }
+        public string ClientId {  get; set; }
         public string DominantGroupId;
         public Queue<string> ClientGroupIds = new Queue<string>();
 
@@ -60,7 +69,7 @@ class ClientTCPApp
         private readonly int MaxMessageLength = 100;
         private readonly int DefaultMessageCoolDown = 5000;
         private readonly int MaxSameMessageCount = 3;
-        private string LastMessage;
+        private string LastMessage; // used for repetition of messages
         private int tempMsgCounter = 0;
 
         // Client Connection State
@@ -244,7 +253,7 @@ class ClientTCPApp
             ClientPort = client?.Client?.LocalEndPoint is IPEndPoint endPoint ? endPoint.Port : -1;
         }//RANDOM CODE FOUND ON STACKOVERFLOW
 
-        // Messaging Validate Functions
+        // Messaging Validate Functions think better doing this all client side as less server load (this would never be the real world case i think)
         private bool ValidateInputText(ref string userText)
         {
             if (string.IsNullOrEmpty(userText))
@@ -260,6 +269,10 @@ class ClientTCPApp
             if (string.IsNullOrWhiteSpace(ip))
             {
                 return false;
+            }
+            if (ip == "0.0.0.0")
+            {
+                return true; // allowing 0.0.0.0 for now will just have to trust the user on this one
             }
 
             var parts = ip.Split('.');
@@ -375,7 +388,7 @@ class ClientTCPApp
         }
 
         // Messaging Functions
-        public async Task SendMessage(string groupId, string message) // might be hard with encryption as the packets are combined with header. im not sure tho as im stupid and dont know anything.
+        public async Task SendMessage(string message) // might be hard with encryption as the packets are combined with header. im not sure tho as im stupid and dont know anything.
         {
             if (Connected)
             {
@@ -385,7 +398,7 @@ class ClientTCPApp
                     {
                         if (CanSendMessage)
                         {
-                            byte[] payload = Encoding.ASCII.GetBytes(ClientId + "-" + groupId + "-" + message); // make sure when sending message the group id is outlined and the sender is too
+                            byte[] payload = Encoding.ASCII.GetBytes(ClientId + "-" + DominantGroupId + "-" + message); // make sure when sending message the group id is outlined and the sender is too
                             int payloadLength = payload.Length;
 
                             // Create a combined array for header and payload
@@ -403,7 +416,7 @@ class ClientTCPApp
                             // Send the combined packet to seber
                             await Nstream.WriteAsync(messageData, 0, messageData.Length);
 
-                            Console.WriteLine("Message sent.");
+                            //Console.WriteLine("Message sent.");  fued of seeing this fucking "message sent" shit. i can just look a the server console 
                         }
                     }
                 }
@@ -417,7 +430,7 @@ class ClientTCPApp
                 Console.WriteLine("\u001b[31mClient is not connected to the server.\u001b[0m");
             }
         }
-        public async Task RecieveMessage() // only when a client is in a group will be better doing this server side
+        public async Task RecieveMessage() // only when a client is in a group will be better doing this server side UPADTE - PROB NOT GONNA USE THIS
         {
             if (Connected)
             {
@@ -442,7 +455,7 @@ class ClientTCPApp
                 {
                     Disconnected = true;
                     Connected = false;
-                    Console.WriteLine($"\u001b[31mPing error: {ex.Message}\u001b[0m");
+                    //Console.WriteLine($"\u001b[31mPing error: {ex.Message}\u001b[0m");  MOST OF THE TIME JUST UNEXPECTED "FORCE CLOSE" OF SERVER
                 }
             }
             else
@@ -468,24 +481,24 @@ class ClientTCPApp
                             Connected = false;
                         }
                     }
-                    else
+                    else // NO RESPONSE RECIEVED
                     {
-                        Console.WriteLine("\u001b[31mNo response received from server.\u001b[0m");
                         Disconnected = true;
                         Connected = false;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) // ERROR IN RECIEVEING RESPONSE
                 {
-                    Console.WriteLine($"\u001b[31mError receiving response: {ex.Message}\u001b[0m");
                     Disconnected = true;
                     Connected = false;
                 }
             }
+            /*
             else
             {
                 Console.WriteLine("\u001b[31mNot connected to the server.\u001b[0m");
             }
+            */
         }
         private async Task ClientServerConnection()
         {
@@ -523,42 +536,122 @@ class ClientTCPApp
                     Console.WriteLine($"\u001b[31mError while connection check: {ex.Message}\u001b[0m");
                 }
 
-                await Task.Delay(5000); // 5 sec interval between each server ping
+                await Task.Delay(5000); // 5 sec interval between each server ping BETTER KEEPING IT HIGH AS I DONT WANT A SHIT TON OF PINGS TO SERVER 
             }
         }
 
-        private static readonly object lockObj = new object();
-        private static Random random = new Random();
-        public string GenGroupId()
+        // GROUP CHAT FUNCTOUIOJNOPNSNDSSSS RARARARARARARARAAAAAA IM A DINOOOOOO AND GET VERYYY LITTTLEEE SLSEEEEPPPPPP HOWWWWW AMM III TYPINGGGGGG ON THISSSS KEYBAORDDD WITH MY SSSSSMMMMMAAALLLLL DINOOOOOOO ARRMSMSMSMSMSMSSS RAAAAAARARARARARARAAAA
+        private async Task SendGroupChatCreateReq() // "TypePrivateManage" - CREATE SEND
         {
-            char[] id = new char[15];
-            lock (lockObj)
+            if (Connected)
             {
-                for (int i = 0; i < id.Length; i++)
+                try
                 {
-                    id[i] = GroupIdChars[random.Next(GroupIdChars.Length)];
+                    byte[] payload = Encoding.ASCII.GetBytes("CREATE" + ClientId);
+                    int payloadLen = payload.Length;
+
+                    byte[] messageData = new byte[ProtocolConsts.HeaderSize + payloadLen];
+
+                    byte[] header = new byte[ProtocolConsts.HeaderSize];
+                    header[0] = ProtocolConsts.TypePrivateManage;
+                    BitConverter.GetBytes(payloadLen).CopyTo(header, 1);
+
+                    Array.Copy(header, 0, messageData, 0, ProtocolConsts.HeaderSize);
+                    Array.Copy(payload, 0, messageData, ProtocolConsts.HeaderSize, payloadLen);
+                    await Nstream.WriteAsync(messageData, 0, messageData.Length);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("\u001b[31mWHAT THE FART ON SENDING THIS GROUP CREATION REQ!!!!!\u001b[0m");
                 }
             }
-
-            // Convert char array to string and insert dashes
-            string idString = new string(id);
-            for (int i = 5; i < idString.Length; i += 6)
+        }
+        private async Task RecieveGroupChatCreateReq() // "TypePrivateManage" - CREATE RECIEVE
+        {
+            if (Connected)
             {
-                idString = idString.Insert(i, "-");
-            }
+                try
+                {
+                    byte[] headerBuffer = new byte[ProtocolConsts.HeaderSize];
+                    int headerBytesRead = 0;
 
-            return idString; // Should be something like XXXXX-XXXXX-XXXXX
+                    // Read the header
+                    while (headerBytesRead < headerBuffer.Length)
+                    {
+                        int bytesRead = await Nstream.ReadAsync(headerBuffer, headerBytesRead, headerBuffer.Length - headerBytesRead);
+                        if (bytesRead == 0)
+                        {
+                            return; // Exit the method
+                        }
+                        headerBytesRead += bytesRead;
+                    }
+
+                    if (headerBytesRead < ProtocolConsts.HeaderSize)
+                    {
+                        // Header was not fully read
+                        Console.WriteLine("Error: Incomplete header read.");
+                        return; // Exit the method
+                    }
+
+                    byte messageType = headerBuffer[0]; // Get message type from packet header
+                    int payloadLength = BitConverter.ToInt32(headerBuffer, 1); // Get length of payload as 4 byte int
+
+                    // Read payload if needed
+                    byte[] payload = new byte[payloadLength];
+                    int payloadBytesRead = 0;
+
+                    if (payloadLength > 0)
+                    {
+                        while (payloadBytesRead < payload.Length)
+                        {
+                            int bytesRead = await Nstream.ReadAsync(payload, payloadBytesRead, payload.Length - payloadBytesRead);
+                            if (bytesRead == 0)
+                            {
+                                // Connection closed or error
+                                Console.WriteLine("Error: Incomplete payload read.");
+                                return; // Exit the method
+                            }
+                            payloadBytesRead += bytesRead;
+                        }
+
+                        if (payloadBytesRead < payloadLength)
+                        {
+                            Console.WriteLine("Error: Incomplete payload read.");
+                            return; // Exit the method
+                        }
+                    }
+
+                    // Convert payload to string
+                    string data = Encoding.ASCII.GetString(payload);
+                    // Handle the data (not shown in the provided code)
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"\u001b[31mError receiving group chat creation request: {ex.Message}\u001b[0m");
+                }
+            }
+        }
+
+        public async Task CreateNewGroup()
+        {
+            if (Connected)
+            {
+                try
+                {
+                    SendGroupChatCreateReq().Wait();
+                    await RecieveGroupChatCreateReq();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("nigga");
+                }
+            }
         }
     }
 
-    class ClientUI : ClientData
+    class ClientUI : Client
     {
-        private readonly ClientData clientData;
-
-        public ClientUI()
-        {
-            clientData = this; // Assuming this is the intended instance
-        }
+        private readonly Client clientData;
 
         ConsoleKeyInfo key;
         int index = 1;
@@ -566,6 +659,11 @@ class ClientTCPApp
         string GreenColour = "\u001b[94m";
         bool bExit = false;
         bool[] toggledOptions = new bool[6];
+
+        public ClientUI()
+        {
+            clientData = this; // Assuming this is the intended instance
+        }
 
         private void Header()
         {
@@ -577,6 +675,7 @@ class ClientTCPApp
         {
             while (!bExit)
             {
+                ServerConCheck(); // just a frequent ping a ding bong long shlong not sure where i should put this as its a await task shenanigans and if i wait for it to finish the whole of this shit is like slower than my grandad walking up a flight of fucking stairs 
                 Console.Clear();
 
                 (int Left, int Top) = Console.GetCursorPosition();
@@ -650,7 +749,7 @@ class ClientTCPApp
         {
             Console.Clear();
             Header();
-            Console.WriteLine("Client IP: {0}", clientData.ClientIp);
+            Console.WriteLine("Client IP: {0}", clientData.ClientIp); // cant get the clients local ip for the life of me 
             Console.WriteLine("Client Port: {0}", clientData.ClientPort);
             Console.WriteLine("Client ID: {0}", clientData.ClientId);
             Console.WriteLine("Dominant Group ID: {0}", DominantGroupId ?? "None");
@@ -674,10 +773,13 @@ class ClientTCPApp
         {
             if (Connected)
             {
+                CreateNewGroup();
+                /*
                 string newGroupId = GenGroupId();
                 ClientGroupIds.Enqueue(newGroupId);
                 DominantGroupId = newGroupId;
                 Console.WriteLine("Group {0} started and set as the dominant group.", newGroupId);
+                */
             }
             else
             {
@@ -699,15 +801,7 @@ class ClientTCPApp
                 else
                 {
                     Console.WriteLine("Enter your message:");
-                    string message = Console.ReadLine();
-                    if (message.Length > 0)
-                    {
-                        SendMessage(DominantGroupId, message).Wait();
-                    }
-                    else
-                    {
-                        Console.WriteLine("Message cannot be empty.");
-                    }
+                    SendMessage(Console.ReadLine()).Wait();
                 }
             }
             else
@@ -724,7 +818,7 @@ class ClientTCPApp
             Console.ReadKey(true);
         }
 
-        private async void HandleSelection()
+        private async void HandleSelection() // just for the simple console ui - will remove when all functions are working and winfomrs workings too :)))
         {
             switch (index)
             {
@@ -750,13 +844,11 @@ class ClientTCPApp
         }
     }
 
-
-    static Task Main(string[] args)
+    static void Main(string[] args)
     {
         ClientUI clientUI = new ClientUI();
         clientUI.Main();
 
         clientUI.Disconnect();
-        return Task.CompletedTask;
     }
 }
