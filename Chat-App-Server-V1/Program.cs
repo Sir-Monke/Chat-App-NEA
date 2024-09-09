@@ -12,9 +12,7 @@
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣤⡀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣶⡿⠃⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣾⡟⠁⠀⠀⠀⠀
@@ -46,13 +44,15 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 using System.Security.Authentication;
+using System.IO;
+using static ServerTCPApp;
 
 public static class ProtocolConsts
 {
     public const byte TypePing = 0x01;
     public const byte TypeData = 0x02;
     public const byte TypePrivateGroup = 0x03;
-    public const byte TypePrivateManage = 0x04;
+    public const byte TypePrivateManage = 0x04; // HEADERS "CREATE" / "KICK" / "LEAVE" / "NAME" / "DELETE" / "STINKY"
     public const byte TypeOther = 0x05; // mainly for client id sending
 
     public const int HeaderSize = 5; // MessageType (1 byte) + PayloadLength (4 bytes)
@@ -66,8 +66,8 @@ class ServerTCPApp
     public static Dictionary<string, Client> Clients = new Dictionary<string, Client>(); // arrrrrr de string shall always beeeee the Client IDDDDDD XOXOXO Slay Ohio Rizzler Skibidi Toilet
     public static Dictionary<string, Group> Groups = new Dictionary<string, Group>(); // not sure how this will.. gonna use the group obj along with the groups id
 
-    // to display a few of the Client Messages below menu
-    public static List<string> RecentMessages = new List<string>();
+    // USED FOR GROUP CREATION AND RECIEVING CLINET SIDE REQS
+    public static List<string> validGroupManageTypes = new List<string> { "CREATE", "DELETE", "LEAVE-", "JOIN--", "KICK--", "NAME--" };
 
     public class Client
     {
@@ -107,64 +107,78 @@ class ServerTCPApp
     {
         public string GroupId { get; private set; }
         public string GroupName { get; set; }
-        private List<Client> Members { get; set; } = new List<Client>();
+        private Dictionary<string, Client> Members { get; set; } = new Dictionary<string, Client>();
 
         private static readonly char[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#%&*".ToCharArray();
-        private static readonly object lockObj = new object();
         private static Random random = new Random();
+        private static readonly object lockObj = new object();
 
-        public Group(string groupName)
+        public Group(/*string groupName*/) // will add group name further down the line
         {
-            GroupName = groupName;
+            //GroupName = groupName;
             GroupId = GenGroupId();
         }
 
         public bool AddMember(string clientId)
         {
-            lock (lockObj) // just gonna use lock as i like using it and it seams cool
+            lock (lockObj) // just gonna use lock as i like using it and it seems cool
             {
-                if (Members.Any(c => c.ClientId == clientId))
+                if (Members.ContainsKey(clientId))
                 {
-                    return false; // some mong trying to add a client thats already in this bitch
+                    return false; // some mong trying to add a client that's already in the group
                 }
 
                 if (Clients.TryGetValue(clientId, out Client client))
                 {
-                    Members.Add(client); // thank fuck 
+                    Members[clientId] = client;
                     return true;
                 }
                 else
                 {
-                    return false; // null client. the retard cant type a fucking 7 digit id 
+                    return false; // null client
                 }
             }
         }
 
         public bool RemoveMember(string clientId)
         {
-            lock (lockObj) // just gonna use lock as i like using it and it seams cool
+            lock (lockObj) // just gonna use lock as i like using it and it seems cool
             {
-                Client existingClient = Members.SingleOrDefault(c => c.ClientId == clientId);
-                if (existingClient != null)
-                {
-                    Members.Remove(existingClient);
-                    return true;
-                }
-                return false;
+                return Members.Remove(clientId); // try to remove client by ID
             }
         }
 
         public void BroadcastMessage(string message, string senderClientId) // send message to all group members
         {
-            lock (Members)
+            lock (lockObj)
             {
-                foreach (Client client in Members)
+                foreach (var kvp in Members)
                 {
-                    if (client.ClientId != senderClientId)
+                    if (kvp.Key != senderClientId) // send to all apart from the sender client
                     {
-                        //SendMessageToClient(client, ProtocolConsts.TypePrivateGroup, message);
+                        SendMessageToClient(kvp.Value, message);
                     }
                 }
+            }
+        }
+
+        private void SendMessageToClient(Client client, string message)
+        {
+            try
+            {
+                byte[] messagePayload = Encoding.ASCII.GetBytes(message);
+                byte[] messageBuffer = new byte[ProtocolConsts.HeaderSize + messagePayload.Length];
+
+                messageBuffer[0] = ProtocolConsts.TypePrivateGroup;
+                BitConverter.GetBytes(messagePayload.Length).CopyTo(messageBuffer, 1);
+                messagePayload.CopyTo(messageBuffer, ProtocolConsts.HeaderSize);
+
+                NetworkStream stream = client.TcpClientAsync.GetStream();
+                stream.WriteAsync(messageBuffer, 0, messageBuffer.Length);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
 
@@ -187,20 +201,6 @@ class ServerTCPApp
             }
 
             return idString; // Should be something like XXXXX-XXXXX-XXXXX
-        }
-
-
-        private void SendMessageToClient(Client client, byte messageType, string message)
-        {
-            byte[] messagePayload = Encoding.ASCII.GetBytes(message);
-            byte[] messageBuffer = new byte[ProtocolConsts.HeaderSize + messagePayload.Length];
-
-            messageBuffer[0] = messageType;
-            BitConverter.GetBytes(messagePayload.Length).CopyTo(messageBuffer, 1);
-            messagePayload.CopyTo(messageBuffer, ProtocolConsts.HeaderSize);
-
-            NetworkStream stream = client.TcpClientAsync.GetStream();
-            stream.Write(messageBuffer, 0, messageBuffer.Length);
         }
     }
 
@@ -331,22 +331,33 @@ class ServerTCPApp
             {
                 try
                 {
-                    TcpClient clientTCP = await Server.AcceptTcpClientAsync();
-                    IPEndPoint clientEndpoint = (IPEndPoint)clientTCP.Client.RemoteEndPoint;
-                    Client clientObj = new Client { IPAddress = clientEndpoint.Address, Port = clientEndpoint.Port, TcpClientAsync = clientTCP };
-                    await AssignClientId(clientObj);
-                    Clients[clientObj.ClientId] = clientObj; ConnectedClients++;
+                    if (GetConnectedClients() < MaxClientConnections)
+                    {
+                        TcpClient clientTCP = await Server.AcceptTcpClientAsync();
+                        IPEndPoint clientEndpoint = (IPEndPoint)clientTCP.Client.RemoteEndPoint;
+                        Client clientObj = new Client { IPAddress = clientEndpoint.Address, Port = clientEndpoint.Port, TcpClientAsync = clientTCP };
+                        await AssignClientId(clientObj);
+                        Clients[clientObj.ClientId] = clientObj;
+                        ConnectedClients++;
 
 
-                    _ = Task.Run(() => HandleClientAsync(clientObj));
+                        _ = Task.Run(() => HandleClientAsync(clientObj));
+                    }
+                    else
+                    {
+                        Console.WriteLine("Too many client connections: {0} out of {1", GetConnectedClients(), MaxClientConnections);
+                        break;
+                    }
                 }
+                /*
                 catch (ObjectDisposedException)
                 {
                     break;
                 }
+                */
                 catch (Exception e)
                 {
-                    Console.WriteLine("Accept error: {0}", e.Message);
+                    Console.WriteLine($"Accept error: {e.Message}");
                 }
             }
         }
@@ -355,7 +366,6 @@ class ServerTCPApp
         private async Task HandleClientAsync(Client ClientObj)
         {
             TcpClient tempClientAsync = ClientObj.TcpClientAsync;
-
             IPAddress clientIP = ((IPEndPoint)tempClientAsync.Client.RemoteEndPoint).Address;
             int clientPort = ((IPEndPoint)tempClientAsync.Client.RemoteEndPoint).Port;
 
@@ -371,39 +381,34 @@ class ServerTCPApp
                         while (headerBytesRead < headerBuffer.Length)
                         {
                             int bytesRead = await stream.ReadAsync(headerBuffer, headerBytesRead, headerBuffer.Length - headerBytesRead);
-                            if (bytesRead == 0) break;
+                            if (bytesRead == 0) break; // header shite
                             headerBytesRead += bytesRead;
                         }
 
-                        if (headerBytesRead < ProtocolConsts.HeaderSize)
-                        {
-                            break;
-                        }
+                        if (headerBytesRead < ProtocolConsts.HeaderSize) break; // break unknown headersize or header not fully read
 
-                        byte messageType = headerBuffer[0];
-                        int payloadLength = BitConverter.ToInt32(headerBuffer, 1);
+                        byte messageType = headerBuffer[0]; // get message type from packet header
+                        int payloadLength = BitConverter.ToInt32(headerBuffer, 1); // get length of payload as 4 byte int
 
                         // Read payload if needed
-                        byte[] payload = new byte[payloadLength];
+                        byte[] payload = new byte[payloadLength]; // make new array of data that will hold all payload goodness
                         int payloadBytesRead = 0;
                         if (payloadLength > 0)
                         {
-                            while (payloadBytesRead < payload.Length)
+                            while (payloadBytesRead < payload.Length) // go through all of payload
                             {
                                 int bytesRead = await stream.ReadAsync(payload, payloadBytesRead, payload.Length - payloadBytesRead);
-                                if (bytesRead == 0) break;
-                                payloadBytesRead += bytesRead;
+                                if (bytesRead == 0) break; // nothing read get the fuck out of there man
+                                payloadBytesRead += bytesRead; // inc read each cycle
                             }
 
                             if (payloadBytesRead < payloadLength)
                             {
-                                Console.WriteLine("Error: Incomplete payload read.");
-                                break;
+                                break; // Console.WriteLine("Error: Incomplete payload read.");
                             }
                         }
 
-                        string data = Encoding.ASCII.GetString(payload);
-                        string message;
+                        string data = Encoding.ASCII.GetString(payload); // convert byte array payload into readable data for normal humans :)
 
                         switch (messageType)
                         {
@@ -413,34 +418,14 @@ class ServerTCPApp
                                 BitConverter.GetBytes(0).CopyTo(responseBuffer, 1);
                                 await stream.WriteAsync(responseBuffer, 0, responseBuffer.Length);
                                 break;
-                            case ProtocolConsts.TypeData: // used to be used for general messages but no need for that now
-                                message = $"Message from {ClientObj.IPAddress}:{ClientObj.Port}: {data}";
-
-                                lock (RecentMessages) // not even gonna say it.. u know what im gonna say
-                                {
-                                    RecentMessages.Add(message);
-                                    if (RecentMessages.Count > 3)
-                                    {
-                                        RecentMessages.RemoveAt(0);
-                                    }
-                                }
-                                Console.WriteLine(message);
+                            case ProtocolConsts.TypeData: // used now for startard info (NEVER USED)
+                                Console.WriteLine($"Message from {ClientObj.IPAddress}:{ClientObj.Port}: {data}");
                                 break;
-                            case ProtocolConsts.TypePrivateGroup: // group chat messages   payload = (ClientId + " " + groupId + " " + message)
-                                if (payloadLength >= 24) // includes the groupid - 17 and client id - 7
-                                {
-                                    string senderClientId = Encoding.ASCII.GetString(payload, 0, 7); // Extract the first 7 bytes as client ID
-                                    string groupId = Encoding.ASCII.GetString(payload, 8, 17); // Extract the next 17 bytes as group ID
-                                    message = Encoding.ASCII.GetString(payload, 24, payload.Length - 25); // Extract the rest as the message
-
-                                    Console.WriteLine($"Group Message from {senderClientId} in group {groupId}: {message}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Payload too short.");
-                                }
+                            case ProtocolConsts.TypePrivateGroup:
+                                PrivateGroupMessageManager(payloadLength,payload);
                                 break;
                             case ProtocolConsts.TypePrivateManage: // only for group chats so users can leave join etc
+                                await PrivateGroupManager(stream,payload);
                                 break;
                             case ProtocolConsts.TypeOther:
                                 // Handle other message types if needed
@@ -452,16 +437,93 @@ class ServerTCPApp
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Forceful disconnect by client {0}:{1}", ClientObj.IPAddress, ClientObj.Port);
-            }
             finally
             {
                 tempClientAsync.Close();
                 Clients.Remove(ClientObj.ClientId);
                 ConnectedClients--;
                 Console.WriteLine("Client {0}:{1} disconnected.", ClientObj.IPAddress, ClientObj.Port);
+            }
+        }
+        private void PrivateGroupMessageManager(int payloadLength, byte[] payload) // group chat messages   payload = (ClientId + " " + groupId + " " + message)
+        {
+            string message;
+            if (payloadLength >= 24) // includes the groupid - 17 and client id - 7
+            {
+                string SenderClientId = Encoding.ASCII.GetString(payload, 0, 7); // Extract the first 7 bytes as client ID
+                string groupId = Encoding.ASCII.GetString(payload, 8, 17); // Extract the next 17 bytes as group ID
+                message = Encoding.ASCII.GetString(payload, 25, payload.Length - 26); // Extract the rest as the message
+
+                Console.WriteLine($"Group Message from {SenderClientId} in group {groupId}: {message}");
+            }
+            else
+            {
+                Console.WriteLine("Payload too short.");
+            }
+        }
+        private async Task PrivateGroupManager(NetworkStream stream, byte[] payload) // - HAD PROBLEM AND HAD TO USE THE GPT TO HELPS ME AS THE GROUP MANAGE TYPE WILL VARY IN SIZE CHANING MANY DEPENDAN FACTORS OF THE PACKET
+        {
+            string GroupManageType;
+            string clientId;
+
+            string possibleManageType = Encoding.ASCII.GetString(payload, 0, 6);
+
+            // Find the actual type by matching the start of the payload
+            GroupManageType = validGroupManageTypes.Where(type => possibleManageType.StartsWith(type)).FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(GroupManageType))
+            {
+                int manageTypeLength = GroupManageType.Length;
+                if (payload.Length >= manageTypeLength + 7) // make sure we have 7 bytes lefyt of da payload so we can get the sexy client id 
+                {
+                    clientId = Encoding.ASCII.GetString(payload, manageTypeLength, 7); // client id
+                    switch (GroupManageType)
+                    {
+                        case "CREATE":
+                            try
+                            {
+                                Group newGroup = new Group();
+                                string tempGroupId = newGroup.GroupId;
+                                Groups[tempGroupId] = newGroup; // at this point we can consider the group created now just send to client
+                                Console.WriteLine(tempGroupId);
+
+                                // Write back to sender client
+                                await ServerClientResponse(stream, clientId, tempGroupId);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Error: cant retrieve the client id bruz");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Error: invalid group manage type bruz");
+            }
+        }
+
+        private async Task ServerClientResponse(NetworkStream stream, string clientId, string groupId)
+        {
+            try
+            {
+                byte[] messagePayload = Encoding.ASCII.GetBytes("CREATE" + clientId + groupId);
+                byte[] messageBuffer = new byte[ProtocolConsts.HeaderSize + messagePayload.Length];
+                messageBuffer[0] = ProtocolConsts.TypePrivateManage;
+                BitConverter.GetBytes(messagePayload.Length).CopyTo(messageBuffer, 1);
+                messagePayload.CopyTo(messageBuffer, ProtocolConsts.HeaderSize);
+                await stream.WriteAsync(messageBuffer, 0, messageBuffer.Length);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
     }
@@ -498,15 +560,6 @@ class ServerTCPApp
                 Console.WriteLine($"{(index == 2 ? GreenColour : "")}List Clients{(toggledOptions[1] ? " \u001b[92mX" : "")}\u001b[0m");
                 Console.WriteLine($"{(index == 3 ? GreenColour : "")}Shutdown Server{(toggledOptions[2] ? " \u001b[92mX" : "")}\u001b[0m");
                 Console.WriteLine($"{(index == 4 ? GreenColour : "")}Exit{(toggledOptions[3] ? " \u001b[92mX" : "")}\u001b[0m");
-
-                // Display recent messages
-                lock (RecentMessages)// LADIES LADIES ONE AT A TIME - this will never get old
-                {
-                    foreach (var message in RecentMessages)
-                    {
-                        Console.WriteLine(message);
-                    }
-                }
 
                 key = Console.ReadKey(true);
 
